@@ -1,15 +1,17 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
 require 'logger'
 require 'redis'
 require 'docker'
 
-$logger = Logger.new(STDOUT)
+$logger = Logger.new(STDERR)
 $logger.level = Logger::INFO
 
-$redis = Redis.new(timeout: 0)
-$redis_subscriber = Redis.new(timeout: 0)
+redis_host = ENV['REDIS_PORT_6379_TCP_ADDR'] || 'localhost'
+redis_port = 6379
+
+$redis = Redis.new(timeout: 0, host: redis_host, port: redis_port)
+$redis_subscriber = Redis.new(timeout: 0, host: redis_host, port: redis_port)
 
 SESSION_TO_CONTAINER_KEY_PREFIX = "s2c"
 
@@ -53,6 +55,10 @@ def remove_container_by_session_id(session_id)
   cid_session_key = "#{SESSION_TO_CONTAINER_KEY_PREFIX}:#{session_id}:cid"
   $redis.del(port_session_key, cid_session_key)
   $logger.info("Redis keys are removed: #{port_session_key} and #{cid_session_key}")
+end
+
+def build_redis
+  Redis.new(host: ENV['REDIS_PORT_6379_TCP_ADDR'], port: 6379)
 end
 
 # Subscribe to Redis Key-event notification expired. See: http://redis.io/topics/notifications.
